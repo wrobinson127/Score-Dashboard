@@ -1,0 +1,773 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Live Scores Dashboard</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: #0a0a0a;
+            color: #ffffff;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        header {
+            margin-bottom: 30px;
+        }
+
+        h1 {
+            font-size: 2em;
+            margin-bottom: 20px;
+            font-weight: 700;
+        }
+
+        .filters {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            margin-bottom: 20px;
+        }
+
+        .filter-btn {
+            padding: 10px 20px;
+            background: #1a1a1a;
+            border: 2px solid #333;
+            color: #fff;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 0.95em;
+            font-weight: 600;
+            transition: all 0.2s;
+        }
+
+        .filter-btn:hover {
+            border-color: #555;
+            background: #222;
+        }
+
+        .filter-btn.active {
+            background: #2563eb;
+            border-color: #2563eb;
+        }
+
+        .settings {
+            display: flex;
+            gap: 15px;
+            align-items: center;
+            margin-bottom: 20px;
+            padding: 15px;
+            background: #1a1a1a;
+            border-radius: 8px;
+        }
+
+        .settings label {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 0.9em;
+            color: #aaa;
+        }
+
+        .settings input[type="checkbox"] {
+            width: 18px;
+            height: 18px;
+            cursor: pointer;
+        }
+
+        .settings input[type="number"] {
+            width: 80px;
+            padding: 6px;
+            background: #0a0a0a;
+            border: 1px solid #333;
+            color: #fff;
+            border-radius: 4px;
+        }
+
+        .games-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+            gap: 20px;
+        }
+
+        .game-card {
+            background: #1a1a1a;
+            border: 1px solid #333;
+            border-radius: 12px;
+            padding: 20px;
+            transition: all 0.2s;
+        }
+
+        .game-card:hover {
+            border-color: #555;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+        }
+
+        .game-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 15px;
+        }
+
+        .game-header-left {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .pin-btn {
+            background: none;
+            border: none;
+            font-size: 1.3em;
+            cursor: pointer;
+            padding: 4px;
+            transition: all 0.2s;
+        }
+
+        .pin-btn:hover {
+            transform: scale(1.15);
+        }
+
+        .sport-badge {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 0.9em;
+            color: #888;
+            font-weight: 600;
+        }
+
+        .sport-icon {
+            font-size: 1.2em;
+        }
+
+        .game-status {
+            display: inline-block;
+            padding: 4px 10px;
+            border-radius: 4px;
+            font-size: 0.85em;
+            font-weight: 600;
+        }
+
+        .status-live {
+            background: #ef4444;
+            color: white;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.7; }
+        }
+
+        .status-scheduled {
+            background: #333;
+            color: #aaa;
+        }
+
+        .status-final {
+            background: #666;
+            color: #fff;
+        }
+
+        .teams {
+            margin: 15px 0;
+        }
+
+        .team-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px 0;
+            border-bottom: 1px solid #2a2a2a;
+        }
+
+        .team-row:last-child {
+            border-bottom: none;
+        }
+
+        .team-name {
+            font-size: 1.1em;
+            font-weight: 600;
+            transition: all 0.3s;
+        }
+
+        .team-name.has-possession {
+            color: #fbbf24;
+            font-weight: 700;
+        }
+
+        .team-name.has-possession::before {
+            content: '🏈 ';
+            font-size: 0.9em;
+        }
+
+        .team-score {
+            font-size: 1.4em;
+            font-weight: 700;
+            min-width: 40px;
+            text-align: right;
+            transition: all 0.3s;
+        }
+
+        .score-flash {
+            animation: scoreFlash 1.5s ease-out;
+        }
+
+        @keyframes scoreFlash {
+            0% {
+                background: #10b981;
+                transform: scale(1.2);
+                box-shadow: 0 0 20px #10b981;
+            }
+            50% {
+                background: #10b981;
+            }
+            100% {
+                background: transparent;
+                transform: scale(1);
+                box-shadow: none;
+            }
+        }
+
+        .winning {
+            color: #10b981;
+        }
+
+        .game-time {
+            text-align: center;
+            color: #888;
+            font-size: 0.9em;
+            margin-top: 10px;
+            padding-top: 10px;
+            border-top: 1px solid #2a2a2a;
+        }
+
+        .last-update {
+            text-align: center;
+            color: #666;
+            font-size: 0.85em;
+            margin-top: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+
+        .refreshing {
+            display: inline-block;
+            width: 12px;
+            height: 12px;
+            border: 2px solid #666;
+            border-top-color: #10b981;
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .loading {
+            text-align: center;
+            color: #888;
+            padding: 40px;
+            font-size: 1.1em;
+        }
+
+        .error {
+            background: #991b1b;
+            border: 1px solid #dc2626;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>🏆 Live Scores Dashboard</h1>
+            
+            <div class="filters">
+                <button class="filter-btn active" data-view="all">All Sports</button>
+                <button class="filter-btn" data-view="pinned">📌 My Games</button>
+                <button class="filter-btn" data-sport="NFL">🏈 NFL</button>
+                <button class="filter-btn" data-sport="NBA">🏀 NBA</button>
+                <button class="filter-btn" data-sport="Soccer">⚽ Soccer</button>
+            </div>
+
+            <div class="settings">
+                <label>
+                    <input type="checkbox" id="autoRefresh" checked>
+                    Auto-refresh
+                </label>
+                <label>
+                    Interval (seconds):
+                    <input type="number" id="refreshInterval" value="1" min="1" max="10" step="0.5">
+                </label>
+            </div>
+        </header>
+
+        <div id="error-container"></div>
+        <div class="games-grid" id="gamesGrid">
+            <div class="loading">Loading scores...</div>
+        </div>
+
+        <div class="last-update" id="lastUpdate"></div>
+    </div>
+
+    <script>
+        // Configuration
+        let currentSport = 'all';
+        let currentView = 'all'; // 'all' or 'pinned'
+        let pinnedGames = new Set(JSON.parse(localStorage.getItem('pinnedGames') || '[]'));
+        let refreshTimer = null;
+        let previousScores = new Map(); // Track previous scores to detect changes
+        let allGames = []; // Store all fetched games
+        let lastRenderedGameIds = ''; // Track which games were last rendered
+
+        // ESPN API endpoints
+        // If running with local server (python server.py), use these:
+        const USE_LOCAL_SERVER = window.location.hostname === 'localhost';
+        
+        const ESPN_APIS = USE_LOCAL_SERVER ? {
+            'NFL': '/api/nfl',
+            'NBA': '/api/nba',
+            'Soccer': '/api/soccer'
+        } : {
+            'NFL': 'https://site.api.espn.com/apis/site/v2/sports/football/nfl/scoreboard',
+            'NBA': 'https://site.api.espn.com/apis/site/v2/sports/basketball/nba/scoreboard',
+            'Soccer': 'https://site.api.espn.com/apis/site/v2/sports/soccer/eng.1/scoreboard'
+        };
+
+        async function fetchScoresFromESPN() {
+            // Show refreshing indicator
+            const lastUpdate = document.getElementById('lastUpdate');
+            const originalHTML = lastUpdate.innerHTML;
+            lastUpdate.innerHTML = '<span class="refreshing"></span> Refreshing...';
+            
+            // Clear games array
+            const tempGames = [];
+            
+            try {
+                console.log('Fetching scores from ESPN...');
+                
+                // Add cache-busting timestamp
+                const cacheBuster = Date.now();
+                
+                // Fetch all sports in parallel
+                const promises = Object.entries(ESPN_APIS).map(async ([sport, url]) => {
+                    try {
+                        // Add timestamp to prevent caching
+                        const urlWithCache = url + '?_t=' + cacheBuster;
+                        console.log(`Fetching ${sport} from: ${urlWithCache}`);
+                        const response = await fetch(urlWithCache, {
+                            cache: 'no-store',
+                            headers: {
+                                'Cache-Control': 'no-cache'
+                            }
+                        });
+                        
+                        if (!response.ok) {
+                            throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                        }
+                        
+                        const data = await response.json();
+                        console.log(`${sport} data received:`, data);
+                        return { sport, data };
+                    } catch (error) {
+                        console.error(`Error fetching ${sport}:`, error);
+                        showError(`Failed to fetch ${sport} scores: ${error.message}`);
+                        return { sport, data: null };
+                    }
+                });
+                
+                const results = await Promise.all(promises);
+                
+                // Parse each sport's data into temp array
+                results.forEach(({ sport, data }) => {
+                    if (data && data.events) {
+                        console.log(`${sport} has ${data.events.length} events`);
+                        data.events.forEach(event => {
+                            const game = parseESPNGame(event, sport);
+                            if (game) {
+                                tempGames.push(game);
+                                console.log('Added game:', game);
+                            }
+                        });
+                    }
+                });
+                
+                console.log(`Total games loaded: ${tempGames.length}`);
+                
+                // Replace allGames with new data
+                allGames = tempGames;
+                
+                if (allGames.length === 0) {
+                    showError('No games found. There may not be any games scheduled right now.');
+                }
+                
+                renderGames();
+                updateLastRefreshTime();
+                
+            } catch (error) {
+                console.error('Error fetching scores:', error);
+                showError('Failed to fetch live scores: ' + error.message);
+                updateLastRefreshTime();
+            }
+        }
+
+        function parseESPNGame(event, sport) {
+            try {
+                const competition = event.competitions[0];
+                const status = event.status;
+                
+                // Get teams
+                const homeTeam = competition.competitors.find(c => c.homeAway === 'home');
+                const awayTeam = competition.competitors.find(c => c.homeAway === 'away');
+                
+                if (!homeTeam || !awayTeam) return null;
+                
+                // Determine game status
+                let gameStatus = 'scheduled';
+                if (status.type.completed) {
+                    gameStatus = 'final';
+                } else if (status.type.state === 'in') {
+                    gameStatus = 'live';
+                }
+                
+                // Get quarter/period info
+                let quarter = status.type.shortDetail || status.type.detail;
+                let time = '';
+                
+                if (gameStatus === 'live') {
+                    quarter = status.period ? `Q${status.period}` : status.type.shortDetail;
+                    time = status.displayClock || '';
+                } else if (gameStatus === 'scheduled') {
+                    quarter = new Date(event.date).toLocaleDateString('en-US', { weekday: 'short' });
+                    time = new Date(event.date).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
+                }
+                
+                // For soccer, adjust period display
+                if (sport === 'Soccer' && gameStatus === 'live') {
+                    if (status.period === 1) quarter = '1st Half';
+                    else if (status.period === 2) quarter = '2nd Half';
+                }
+                
+                // Get possession for NFL
+                let possession = null;
+                if (sport === 'NFL' && gameStatus === 'live' && competition.situation) {
+                    const possessionTeamId = competition.situation.possession;
+                    if (possessionTeamId === homeTeam.id) possession = 'home';
+                    else if (possessionTeamId === awayTeam.id) possession = 'away';
+                }
+                
+                return {
+                    id: event.id,
+                    sport: sport,
+                    homeTeam: homeTeam.team.shortDisplayName || homeTeam.team.displayName,
+                    awayTeam: awayTeam.team.shortDisplayName || awayTeam.team.displayName,
+                    homeScore: parseInt(homeTeam.score) || 0,
+                    awayScore: parseInt(awayTeam.score) || 0,
+                    status: gameStatus,
+                    quarter: quarter,
+                    time: time,
+                    possession: possession
+                };
+                
+            } catch (error) {
+                console.error('Error parsing game:', error);
+                return null;
+            }
+        }
+
+        function showError(message) {
+            const errorContainer = document.getElementById('error-container');
+            errorContainer.innerHTML = `<div class="error">${message}</div>`;
+            setTimeout(() => {
+                errorContainer.innerHTML = '';
+            }, 10000); // Show for 10 seconds
+        }
+
+        // Filter buttons
+        document.querySelectorAll('.filter-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                
+                if (btn.dataset.view) {
+                    currentView = btn.dataset.view;
+                    currentSport = 'all';
+                } else if (btn.dataset.sport) {
+                    currentView = 'all';
+                    currentSport = btn.dataset.sport;
+                }
+                
+                renderGames();
+            });
+        });
+
+        // Auto-refresh toggle
+        document.getElementById('autoRefresh').addEventListener('change', (e) => {
+            if (e.target.checked) {
+                startAutoRefresh();
+            } else {
+                stopAutoRefresh();
+            }
+        });
+
+        // Refresh interval change
+        document.getElementById('refreshInterval').addEventListener('change', () => {
+            if (document.getElementById('autoRefresh').checked) {
+                stopAutoRefresh();
+                startAutoRefresh();
+            }
+        });
+
+        function togglePin(gameId) {
+            if (pinnedGames.has(gameId)) {
+                pinnedGames.delete(gameId);
+            } else {
+                pinnedGames.add(gameId);
+            }
+            localStorage.setItem('pinnedGames', JSON.stringify([...pinnedGames]));
+            renderGames();
+        }
+        
+        // Make togglePin globally accessible
+        window.togglePin = togglePin;
+
+        function renderGames() {
+            const grid = document.getElementById('gamesGrid');
+            
+            let games = allGames;
+            
+            // Filter by view (all or pinned)
+            if (currentView === 'pinned') {
+                games = games.filter(g => pinnedGames.has(g.id));
+            }
+            
+            // Filter by sport
+            if (currentSport !== 'all' && currentView !== 'pinned') {
+                games = games.filter(g => g.sport === currentSport);
+            }
+            
+            // Sort games: Live first, then scheduled, then final
+            games.sort((a, b) => {
+                const statusOrder = { 'live': 0, 'scheduled': 1, 'final': 2 };
+                return statusOrder[a.status] - statusOrder[b.status];
+            });
+            
+            if (games.length === 0) {
+                const message = currentView === 'pinned' 
+                    ? 'No pinned games. Click the ⭐ icon on any game to pin it here.'
+                    : 'No games to display';
+                grid.innerHTML = `<div class="loading">${message}</div>`;
+                lastRenderedGameIds = '';
+                return;
+            }
+            
+            // Check if the list of games has changed
+            const currentGameIds = games.map(g => `${g.id}-${g.status}`).join(',');
+            const gamesListChanged = currentGameIds !== lastRenderedGameIds;
+            
+            console.log('Games list changed:', gamesListChanged);
+            
+            if (gamesListChanged) {
+                console.log('Full rebuild - games changed');
+                // Full rebuild - games list changed
+                buildFullGamesList(games, grid);
+                lastRenderedGameIds = currentGameIds;
+            } else {
+                console.log('Quick update - just updating scores');
+                // Just update scores/times for existing games
+                updateExistingGames(games);
+            }
+        }
+        
+        function buildFullGamesList(games, grid) {
+            // Group games by status
+            const liveGames = games.filter(g => g.status === 'live');
+            const scheduledGames = games.filter(g => g.status === 'scheduled');
+            const finalGames = games.filter(g => g.status === 'final');
+            
+            let html = '';
+            
+            // Add live games section
+            if (liveGames.length > 0) {
+                html += '<div style="grid-column: 1 / -1; font-size: 1.2em; font-weight: 700; margin: 10px 0; color: #ef4444;">● LIVE GAMES</div>';
+                html += liveGames.map(game => renderGameCard(game)).join('');
+            }
+            
+            // Add scheduled games section
+            if (scheduledGames.length > 0) {
+                html += '<div style="grid-column: 1 / -1; font-size: 1.2em; font-weight: 700; margin: 20px 0 10px 0; color: #888;">UPCOMING GAMES</div>';
+                html += scheduledGames.map(game => renderGameCard(game)).join('');
+            }
+            
+            // Add final games section
+            if (finalGames.length > 0) {
+                html += '<div style="grid-column: 1 / -1; font-size: 1.2em; font-weight: 700; margin: 20px 0 10px 0; color: #666;">FINAL GAMES</div>';
+                html += finalGames.map(game => renderGameCard(game)).join('');
+            }
+            
+            grid.innerHTML = html;
+        }
+        
+        function updateExistingGames(games) {
+            games.forEach(game => {
+                // Find the game card by data attribute
+                const card = document.querySelector(`[data-game-id="${game.id}"]`);
+                if (!card) return;
+                
+                const scores = card.querySelectorAll('.team-score');
+                const timeDisplay = card.querySelector('.game-time');
+                
+                if (scores.length === 2) {
+                    // Check away score
+                    const previousScore = previousScores.get(game.id);
+                    
+                    // Update away score
+                    if (scores[0].textContent != game.awayScore) {
+                        scores[0].textContent = game.awayScore;
+                        if (previousScore && game.awayScore > previousScore.awayScore) {
+                            scores[0].classList.add('score-flash');
+                            setTimeout(() => scores[0].classList.remove('score-flash'), 1500);
+                        }
+                    }
+                    
+                    // Update home score  
+                    if (scores[1].textContent != game.homeScore) {
+                        scores[1].textContent = game.homeScore;
+                        if (previousScore && game.homeScore > previousScore.homeScore) {
+                            scores[1].classList.add('score-flash');
+                            setTimeout(() => scores[1].classList.remove('score-flash'), 1500);
+                        }
+                    }
+                    
+                    // Update previous scores
+                    previousScores.set(game.id, {
+                        homeScore: game.homeScore,
+                        awayScore: game.awayScore
+                    });
+                }
+                
+                // Update time/quarter
+                if (timeDisplay) {
+                    timeDisplay.textContent = `${game.quarter} - ${game.time}`;
+                }
+            });
+        }
+        
+        function renderGameCard(game) {
+            const sportIcons = {
+                'NFL': '🏈',
+                'NBA': '🏀',
+                'Soccer': '⚽'
+            };
+            
+            const statusClass = `status-${game.status}`;
+            const homeWinning = game.homeScore > game.awayScore;
+            const awayWinning = game.awayScore > game.homeScore;
+            const isPinned = pinnedGames.has(game.id);
+            
+            // Check possession for NFL games
+            const homePossession = game.sport === 'NFL' && game.possession === 'home';
+            const awayPossession = game.sport === 'NFL' && game.possession === 'away';
+            
+            // Check if score changed
+            const previousScore = previousScores.get(game.id);
+            let homeScoreChanged = false;
+            let awayScoreChanged = false;
+            
+            if (previousScore && game.status === 'live') {
+                homeScoreChanged = game.homeScore > previousScore.homeScore;
+                awayScoreChanged = game.awayScore > previousScore.awayScore;
+            }
+            
+            // Update previous scores
+            previousScores.set(game.id, {
+                homeScore: game.homeScore,
+                awayScore: game.awayScore
+            });
+            
+            return `
+                <div class="game-card" data-game-id="${game.id}">
+                    <div class="game-header">
+                        <div class="game-header-left">
+                            <button class="pin-btn ${isPinned ? 'pinned' : ''}" onclick="window.togglePin('${game.id}')">
+                                ${isPinned ? '⭐' : '☆'}
+                            </button>
+                            <div class="sport-badge">
+                                <span class="sport-icon">${sportIcons[game.sport]}</span>
+                                <span>${game.sport}</span>
+                            </div>
+                        </div>
+                        <div class="game-status ${statusClass}">
+                            ${game.status === 'live' ? '● LIVE' : game.status.toUpperCase()}
+                        </div>
+                    </div>
+                    
+                    <div class="teams">
+                        <div class="team-row">
+                            <div class="team-name ${awayPossession ? 'has-possession' : ''}">${game.awayTeam}</div>
+                            <div class="team-score ${awayWinning ? 'winning' : ''} ${awayScoreChanged ? 'score-flash' : ''}">${game.awayScore}</div>
+                        </div>
+                        <div class="team-row">
+                            <div class="team-name ${homePossession ? 'has-possession' : ''}">${game.homeTeam}</div>
+                            <div class="team-score ${homeWinning ? 'winning' : ''} ${homeScoreChanged ? 'score-flash' : ''}">${game.homeScore}</div>
+                        </div>
+                    </div>
+                    
+                    <div class="game-time">
+                        ${game.quarter} - ${game.time}
+                    </div>
+                </div>
+            `;
+        }
+
+        function updateLastRefreshTime() {
+            const now = new Date();
+            const timeString = now.toLocaleTimeString();
+            document.getElementById('lastUpdate').textContent = `Last updated: ${timeString}`;
+        }
+
+        function fetchScores() {
+            fetchScoresFromESPN();
+        }
+
+        function startAutoRefresh() {
+            const interval = parseInt(document.getElementById('refreshInterval').value) * 1000;
+            console.log(`Starting auto-refresh with ${interval}ms interval`);
+            refreshTimer = setInterval(() => {
+                console.log('Auto-refresh triggered at', new Date().toLocaleTimeString());
+                fetchScores();
+            }, interval);
+        }
+
+        function stopAutoRefresh() {
+            if (refreshTimer) {
+                clearInterval(refreshTimer);
+                refreshTimer = null;
+            }
+        }
+
+        // Initial load
+        fetchScores();
+        startAutoRefresh();
+    </script>
+</body>
+</html>
